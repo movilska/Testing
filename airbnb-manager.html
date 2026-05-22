@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Airbnb Project Manager — GDL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&family=Mulish:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+:root{
+  --ink:#0D0D0F; --ink2:#3A3A40; --ink3:#7A7A85; --ink4:#B0B0BC;
+  --paper:#F7F6F2; --paper2:#EFEDE7; --paper3:#E4E1D8;
+  --accent:#C17F3A; --accent2:#E8A84E; --accent-bg:#FBF3E8;
+  --teal:#1A7A6E; --teal-bg:#E6F4F2;
+  --red:#C0392B; --red-bg:#FDECEA;
+  --blue:#1D5FA8; --blue-bg:#E8F0FB;
+  --green:#2D7A4F; --green-bg:#E8F5EE;
+  --purple:#5B3FA8; --purple-bg:#EEE9FB;
+  --amber:#C17F3A; --amber-bg:#FBF3E8;
+  --r:8px; --rlg:14px; --rxl:20px;
+  --shadow:0 1px 3px rgba(0,0,0,.07),0 4px 12px rgba(0,0,0,.05);
+  --shadow-md:0 2px 8px rgba(0,0,0,.09),0 8px 24px rgba(0,0,0,.07);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Mulish',sans-serif;background:var(--paper);color:var(--ink);min-height:100vh;font-size:14px;line-height:1.5}
+a{color:inherit;text-decoration:none}
+
+/* ── LAYOUT ── */
+.app{display:flex;min-height:100vh}
+.sidebar{
+  width:230px;min-height:100vh;background:var(--ink);
+  display:flex;flex-direction:column;position:fixed;top:0;left:0;z-index:100;
+  transition:transform .25s;
+}
+.sidebar-brand{padding:1.5rem 1.25rem 1rem;border-bottom:1px solid rgba(255,255,255,.08)}
+.brand-name{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:#fff;letter-spacing:.02em}
+.brand-sub{font-size:11px;color:rgba(255,255,255,.3);margin-top:2px;font-family:'DM Mono',monospace}
+.sidebar-section{padding:.5rem 0}
+.sidebar-label{font-size:10px;font-weight:700;color:rgba(255,255,255,.25);letter-spacing:.1em;text-transform:uppercase;padding:.75rem 1.25rem .3rem}
+.nav-item{
+  display:flex;align-items:center;gap:10px;padding:8px 1.25rem;
+  font-size:13px;font-weight:500;color:rgba(255,255,255,.45);
+  cursor:pointer;transition:all .15s;border-left:2px solid transparent;
+}
+.nav-item i{font-size:16px}
+.nav-item:hover{color:rgba(255,255,255,.8);background:rgba(255,255,255,.04)}
+.nav-item.active{color:var(--accent2);border-left-color:var(--accent2);background:rgba(201,127,58,.08)}
+.sidebar-footer{padding:1rem 1.25rem;border-top:1px solid rgba(255,255,255,.07);margin-top:auto}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--ink3);display:inline-block;margin-right:5px;transition:background .3s}
+.sync-dot.ok{background:#4ade80}
+.sync-dot.err{background:#f87171}
+.sync-dot.spin{background:var(--accent2);animation:pulse .8s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+.main{margin-left:230px;flex:1;display:flex;flex-direction:column}
+.topbar{
+  background:#fff;border-bottom:1px solid var(--paper3);
+  padding:.875rem 1.75rem;display:flex;align-items:center;gap:12px;
+  position:sticky;top:0;z-index:50;
+}
+.topbar h1{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;flex:1;color:var(--ink)}
+.phase-badge{
+  font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;
+  background:var(--accent-bg);color:var(--accent);font-family:'DM Mono',monospace;letter-spacing:.04em;
+}
+.hamburger{display:none;background:none;border:none;font-size:22px;cursor:pointer;color:var(--ink)}
+.content{padding:1.5rem 1.75rem;max-width:1200px}
+
+/* ── PANELS ── */
+.panel{display:none}.panel.active{display:block}
+
+/* ── KPI STRIP ── */
+.kpi-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:1.5rem}
+.kpi{background:#fff;border:1px solid var(--paper3);border-radius:var(--rlg);padding:.875rem 1rem;position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:3px 3px 0 0;background:var(--kpi-accent,var(--paper3))}
+.kpi .lbl{font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+.kpi .val{font-size:20px;font-weight:600;font-family:'DM Mono',monospace;color:var(--ink)}
+.kpi .val.green{color:var(--green)}
+.kpi .val.red{color:var(--red)}
+.kpi .val.amber{color:var(--amber)}
+.kpi .sub{font-size:11px;color:var(--ink3);margin-top:3px}
+.kpi .kpi-icon{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:28px;color:var(--paper2)}
+
+/* ── PROGRESS ── */
+.prog-row{margin-bottom:1.5rem}
+.prog-row .lbl{font-size:12px;color:var(--ink2);margin-bottom:6px;display:flex;justify-content:space-between}
+.prog-track{height:6px;background:var(--paper2);border-radius:3px}
+.prog-fill{height:6px;border-radius:3px;transition:width .4s;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+
+/* ── SECTION HDR ── */
+.section-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;gap:12px;flex-wrap:wrap}
+.section-hdr h2{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--ink)}
+
+/* ── PHASE CARDS (dashboard) ── */
+.phase-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-bottom:1.5rem}
+.phase-card{
+  background:#fff;border:1px solid var(--paper3);border-radius:var(--rlg);
+  padding:1rem 1.1rem;cursor:pointer;transition:all .15s;
+  border-top:3px solid var(--ph-color,var(--paper3));
+}
+.phase-card:hover{box-shadow:var(--shadow-md);transform:translateY(-1px)}
+.phase-card .ph-name{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;margin-bottom:6px;color:var(--ink)}
+.phase-card .ph-amt{font-family:'DM Mono',monospace;font-size:18px;font-weight:500;color:var(--ink);margin-bottom:8px}
+.phase-card .ph-bar-track{height:4px;background:var(--paper2);border-radius:2px}
+.phase-card .ph-bar-fill{height:4px;border-radius:2px;background:var(--ph-color);transition:width .3s}
+.phase-card .ph-meta{display:flex;justify-content:space-between;margin-top:6px;font-size:11px;color:var(--ink3)}
+
+/* ── FILTER BAR ── */
+.filter-section{margin-bottom:.75rem}
+.filter-lbl{font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+.filter-bar{display:flex;gap:6px;flex-wrap:wrap}
+.chip{
+  padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;
+  border:1px solid var(--paper3);background:#fff;color:var(--ink2);
+  cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:4px;
+}
+.chip:hover{border-color:var(--ink3);color:var(--ink)}
+.chip.active{background:var(--ink);color:var(--accent2);border-color:var(--ink)}
+.chip.active-sub{background:var(--blue);color:#fff;border-color:var(--blue)}
+.chip.active-phase{background:var(--teal);color:#fff;border-color:var(--teal)}
+
+/* ── TOTALS BAR ── */
+.totals-bar{
+  display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+  padding:.625rem .875rem;background:var(--ink);border-radius:var(--r);
+  margin-bottom:.75rem;font-size:12px;
+}
+.totals-bar .tb-label{color:rgba(255,255,255,.35);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-right:4px}
+.totals-bar .tb-count{color:rgba(255,255,255,.2);margin-right:4px}
+.tpill{
+  display:flex;align-items:center;gap:5px;padding:3px 10px;
+  background:rgba(255,255,255,.06);border-radius:20px;white-space:nowrap;
+}
+.tpill span:first-child{color:rgba(255,255,255,.4);font-size:10px}
+.tpill span:last-child{font-weight:600;font-family:'DM Mono',monospace}
+
+/* ── TABLE ── */
+.tbl-wrap{background:#fff;border:1px solid var(--paper3);border-radius:var(--rlg);overflow:hidden;box-shadow:var(--shadow)}
+.tbl-scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:800px}
+thead th{
+  background:var(--ink);color:rgba(255,255,255,.6);
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+  padding:10px 12px;text-align:left;white-space:nowrap;
+}
+thead th.r{text-align:right}
+tbody tr:not(:last-child) td{border-bottom:1px solid var(--paper3)}
+tbody tr:hover td{background:var(--paper)}
+td{padding:9px 12px;font-size:13px;vertical-align:middle}
+td.r{text-align:right}
+td.mono{font-family:'DM Mono',monospace;font-size:12px}
+.tag{display:inline-block;font-size:10px;font-weight:600;padding:2px 7px;border-radius:5px;white-space:nowrap}
+.price-old{text-decoration:line-through;color:var(--ink4);font-size:11px;font-family:'DM Mono',monospace}
+
+/* Status */
+.status-wrap{position:relative;display:inline-block}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;cursor:pointer;white-space:nowrap}
+.b-pend{background:var(--paper2);color:var(--ink2)}
+.b-buy{background:var(--amber-bg);color:var(--amber)}
+.b-done{background:var(--green-bg);color:var(--green)}
+.b-way{background:var(--blue-bg);color:var(--blue)}
+.b-rec{background:var(--purple-bg);color:var(--purple)}
+.status-sel{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;font-size:12px}
+
+/* ── BUTTONS ── */
+.btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:8px 14px;border-radius:var(--r);border:1px solid var(--paper3);
+  background:#fff;font-size:13px;font-weight:600;cursor:pointer;
+  color:var(--ink);transition:all .15s;font-family:inherit;
+}
+.btn:hover{background:var(--paper2);border-color:var(--paper3)}
+.btn.primary{background:var(--ink);color:var(--accent2);border-color:var(--ink)}
+.btn.primary:hover{background:var(--ink2)}
+.btn.teal{background:var(--teal);color:#fff;border-color:var(--teal)}
+.btn.danger{color:var(--red)}.btn.danger:hover{background:var(--red-bg);border-color:var(--red)}
+.btn.sm{padding:5px 10px;font-size:12px}
+
+/* ── FORMS ── */
+.card{background:#fff;border:1px solid var(--paper3);border-radius:var(--rlg);padding:1.25rem;box-shadow:var(--shadow)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-grid .full{grid-column:1/-1}
+.fld label{display:block;font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px}
+.fld input,.fld select,.fld textarea{
+  width:100%;padding:8px 10px;border:1px solid var(--paper3);
+  border-radius:var(--r);font-size:13px;background:var(--paper);
+  color:var(--ink);font-family:inherit;transition:border-color .15s;
+}
+.fld input:focus,.fld select:focus{outline:none;border-color:var(--accent);background:#fff}
+
+/* ── CONFIG ── */
+.cfg-list{display:flex;flex-direction:column}
+.cfg-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--paper3)}
+.cfg-row:last-child{border-bottom:none}
+.cfg-row .cfg-lbl{font-size:13px;font-weight:600;flex:1}
+.cfg-row .cfg-sub{font-size:11px;color:var(--ink3);margin-top:2px}
+.cfg-row input{width:200px;padding:7px 10px;border:1px solid var(--paper3);border-radius:var(--r);font-size:13px;font-family:inherit;background:var(--paper)}
+.cfg-row input:focus{outline:none;border-color:var(--accent);background:#fff}
+
+/* ── CHECKLIST ── */
+.space-section{background:#fff;border:1px solid var(--paper3);border-radius:var(--rlg);overflow:hidden;margin-bottom:1rem;box-shadow:var(--shadow)}
+.space-hdr{background:var(--ink);color:rgba(255,255,255,.9);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:700;font-family:'Syne',sans-serif}
+.space-hdr .prog{font-size:11px;color:rgba(255,255,255,.4);font-weight:400}
+.sub-hdr{padding:6px 14px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;background:var(--paper);display:flex;align-items:center;gap:5px;border-bottom:1px solid var(--paper3)}
+.chk-item{display:flex;align-items:center;gap:10px;padding:9px 14px;font-size:13px;transition:background .1s;border-bottom:1px solid var(--paper3)}
+.chk-item:last-child{border-bottom:none}
+.chk-item:hover{background:var(--paper)}
+.chk-item input[type=checkbox]{width:15px;height:15px;accent-color:var(--ink);cursor:pointer;flex-shrink:0}
+.chk-item.done span.art{text-decoration:line-through;color:var(--ink3)}
+.chk-price{margin-left:auto;font-family:'DM Mono',monospace;font-size:12px;color:var(--ink2);flex-shrink:0}
+.store-tag{font-size:10px;padding:2px 6px;border-radius:5px;background:var(--paper2);color:var(--ink3);flex-shrink:0}
+
+/* ── TOAST ── */
+.toast{
+  position:fixed;bottom:1.5rem;right:1.5rem;background:var(--ink);
+  color:#fff;padding:10px 16px;border-radius:var(--r);font-size:13px;font-weight:500;
+  transform:translateY(80px);opacity:0;transition:all .25s;z-index:999;
+  display:flex;align-items:center;gap:8px;pointer-events:none;
+}
+.toast.show{transform:translateY(0);opacity:1}
+.toast .ti{color:var(--accent2)}
+
+/* ── OVERLAY / MOBILE ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:99}
+.overlay.show{display:block}
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0);box-shadow:4px 0 20px rgba(0,0,0,.3)}
+  .main{margin-left:0}.hamburger{display:block}
+  .form-grid{grid-template-columns:1fr}.form-grid .full{grid-column:1}
+  .content{padding:1rem}.topbar{padding:.875rem 1rem}
+}
+
+/* ── EMPTY ── */
+.empty{text-align:center;padding:3rem 1rem;color:var(--ink3)}
+.empty i{font-size:36px;display:block;margin-bottom:.5rem}
+
+/* ── GIST ── */
+.gist-card{background:#fff;border:1px solid var(--paper3);border-radius:var(--rlg);padding:1.1rem;box-shadow:var(--shadow);margin-bottom:1rem;max-width:540px}
+.gist-instructions{background:var(--paper2);border-radius:var(--r);padding:.875rem;margin-bottom:1rem;font-size:12px;color:var(--ink2);line-height:1.7}
+#gist-log{margin-top:.625rem;font-size:12px;color:var(--ink3);min-height:18px;font-family:'DM Mono',monospace}
+</style>
+</head>
+<body>
+<div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+
+<div class="app">
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-name">Airbnb Manager</div>
+    <div class="brand-sub">GDL — Proyecto completo</div>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-label">Visión general</div>
+    <div class="nav-item active" onclick="nav('dashboard')"><i class="ti ti-layout-dashboard"></i> Dashboard</div>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-label">Gestión</div>
+    <div class="nav-item" onclick="nav('gastos')"><i class="ti ti-list-details"></i> Gastos</div>
+    <div class="nav-item" onclick="nav('agregar')"><i class="ti ti-circle-plus"></i> Agregar gasto</div>
+    <div class="nav-item" onclick="nav('checklist')"><i class="ti ti-checklist"></i> Checklist</div>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-label">Finanzas</div>
+    <div class="nav-item" onclick="nav('ingresos')"><i class="ti ti-cash"></i> Ingresos & ROI</div>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-label">Sistema</div>
+    <div class="nav-item" onclick="nav('config')"><i class="ti ti-settings-2"></i> Configuración</div>
+  </div>
+  <div class="sidebar-footer">
+    <div style="display:flex;align-items:center;font-size:11px;color:rgba(255,255,255,.3)">
+      <span class="sync-dot" id="sync-dot"></span>
+      <span id="sync-label">Local</span>
+    </div>
+  </div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <button class="hamburger" onclick="toggleSidebar()"><i class="ti ti-menu-2"></i></button>
+    <h1 id="page-title">Dashboard</h1>
+    <span class="phase-badge" id="topbar-badge">EN PREPARACIÓN</span>
+  </div>
+
+  <div class="content">
+
+    <!-- DASHBOARD -->
+    <div class="panel active" id="p-dashboard">
+      <div class="kpi-strip" id="kpis"></div>
+      <div class="prog-row">
+        <div class="lbl"><span>Progreso global</span><span id="prog-label">0%</span></div>
+        <div class="prog-track"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+      </div>
+      <div class="section-hdr"><h2>Por fase del proyecto</h2></div>
+      <div class="phase-grid" id="phase-grid"></div>
+      <div class="section-hdr" style="margin-top:1.25rem"><h2>Por categoría</h2></div>
+      <div id="cat-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:1.5rem"></div>
+    </div>
+
+    <!-- GASTOS -->
+    <div class="panel" id="p-gastos">
+      <div class="section-hdr">
+        <h2>Gastos del proyecto</h2>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <input id="search" type="search" placeholder="Buscar..." style="padding:7px 10px;border:1px solid var(--paper3);border-radius:var(--r);font-size:13px;background:var(--paper);font-family:inherit;width:155px">
+          <button class="btn sm" onclick="exportCSV()"><i class="ti ti-file-type-csv"></i> CSV</button>
+          <button class="btn sm" onclick="exportXLS()"><i class="ti ti-file-spreadsheet"></i> Excel</button>
+        </div>
+      </div>
+      <div class="filter-section">
+        <div class="filter-lbl">Fase</div>
+        <div class="filter-bar" id="filter-phase"></div>
+      </div>
+      <div class="filter-section">
+        <div class="filter-lbl">Categoría</div>
+        <div class="filter-bar" id="filter-cat"></div>
+      </div>
+      <div class="filter-section" style="margin-bottom:1rem">
+        <div class="filter-lbl">Tipo</div>
+        <div class="filter-bar" id="filter-type"></div>
+      </div>
+      <div class="totals-bar" id="totals-bar"></div>
+      <div class="tbl-wrap">
+        <div class="tbl-scroll">
+          <table>
+            <thead><tr>
+              <th>Fase</th><th>Categoría</th><th>Artículo / Servicio</th>
+              <th>Tipo</th><th>Proveedor</th>
+              <th class="r">Cant.</th>
+              <th class="r">Precio unit.</th>
+              <th class="r">Total</th>
+              <th>Estatus</th>
+              <th style="text-align:center">Recurrente</th>
+              <th style="text-align:center">Link</th>
+              <th></th>
+            </tr></thead>
+            <tbody id="gastos-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- AGREGAR -->
+    <div class="panel" id="p-agregar">
+      <div class="section-hdr"><h2>Agregar gasto</h2></div>
+      <div class="card" style="max-width:580px">
+        <div class="form-grid">
+          <div class="fld"><label>Fase del proyecto</label><select id="f-phase"></select></div>
+          <div class="fld"><label>Categoría</label><select id="f-cat"></select></div>
+          <div class="fld"><label>Tipo</label><select id="f-type"></select></div>
+          <div class="fld"><label>Proveedor / Tienda</label><input id="f-store" type="text" placeholder="Liverpool, IKEA, local…"></div>
+          <div class="fld full"><label>Descripción</label><input id="f-art" type="text" placeholder="Ej: Pintura blanca mate 19 lt"></div>
+          <div class="fld"><label>Cantidad</label><input id="f-qty" type="number" min="1" value="1"></div>
+          <div class="fld"><label>Precio unitario (MXN)</label><input id="f-price" type="number" min="0" step="0.01" placeholder="0.00"></div>
+          <div class="fld full" style="display:flex;align-items:center;gap:10px;padding-top:4px">
+            <input type="checkbox" id="f-rec" style="width:16px;height:16px;accent-color:var(--ink)">
+            <label for="f-rec" style="font-size:13px;font-weight:500;color:var(--ink);text-transform:none;letter-spacing:0;margin-bottom:0;cursor:pointer">Gasto recurrente mensual (internet, gas, limpieza…)</label>
+          </div>
+          <div class="fld full"><label>Notas (opcional)</label><input id="f-notes" type="text" placeholder="Modelo, color, especificaciones…"></div>
+          <div class="fld full"><label>Link del producto (opcional)</label><input id="f-link" type="url" placeholder="https://…"></div>
+          <div class="full" style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">
+            <button class="btn" onclick="nav('gastos')">Cancelar</button>
+            <button class="btn primary" onclick="addItem()"><i class="ti ti-plus"></i> Agregar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHECKLIST -->
+    <div class="panel" id="p-checklist"></div>
+
+    <!-- INGRESOS & ROI -->
+    <div class="panel" id="p-ingresos">
+      <div class="section-hdr"><h2>Ingresos proyectados & ROI</h2></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;max-width:680px;margin-bottom:1.5rem">
+        <div class="card">
+          <div class="cfg-list">
+            <div style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.75rem">Parámetros de operación</div>
+            <div class="cfg-row"><div><div class="cfg-lbl">Precio por noche (MXN)</div></div><input id="roi-noche" type="number" value="1800" oninput="calcROI()"></div>
+            <div class="cfg-row"><div><div class="cfg-lbl">Ocupación estimada (%)</div></div><input id="roi-ocup" type="number" value="65" min="0" max="100" oninput="calcROI()"></div>
+            <div class="cfg-row"><div><div class="cfg-lbl">Días disponibles / mes</div></div><input id="roi-dias" type="number" value="30" min="1" max="31" oninput="calcROI()"></div>
+            <div class="cfg-row"><div><div class="cfg-lbl">Fee Airbnb (%)</div></div><input id="roi-fee" type="number" value="3" min="0" max="20" oninput="calcROI()"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="cfg-list">
+            <div style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.75rem">Costos fijos mensuales</div>
+            <div class="cfg-row"><div><div class="cfg-lbl">Internet</div></div><input id="roi-internet" type="number" value="600" oninput="calcROI()"></div>
+            <div class="cfg-row"><div><div class="cfg-lbl">Gas</div></div><input id="roi-gas" type="number" value="400" oninput="calcROI()"></div>
+            <div class="cfg-row"><div><div class="cfg-lbl">Limpieza / servicio</div></div><input id="roi-limpieza" type="number" value="800" oninput="calcROI()"></div>
+            <div class="cfg-row"><div><div class="cfg-lbl">Otros fijos</div></div><input id="roi-otros" type="number" value="500" oninput="calcROI()"></div>
+          </div>
+        </div>
+      </div>
+      <div class="kpi-strip" id="roi-kpis" style="max-width:680px"></div>
+      <div class="card" style="max-width:680px;margin-top:1rem">
+        <div style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:1rem">Proyección mensual</div>
+        <div id="roi-chart" style="display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+    </div>
+
+    <!-- CONFIG -->
+    <div class="panel" id="p-config">
+      <div class="section-hdr"><h2>Configuración</h2></div>
+      <div class="card" style="max-width:520px;margin-bottom:1rem">
+        <div style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.75rem">Proyecto</div>
+        <div class="cfg-list">
+          <div class="cfg-row"><div><div class="cfg-lbl">Nombre del proyecto</div></div><input id="cfg-name" type="text" value="Airbnb GDL" onchange="saveCfg();render()"></div>
+          <div class="cfg-row"><div><div class="cfg-lbl">Presupuesto total (MXN)</div><div class="cfg-sub">Inversión máxima planificada</div></div><input id="cfg-budget" type="number" value="350000" onchange="saveCfg();render()"></div>
+          <div class="cfg-row"><div><div class="cfg-lbl">Fase actual</div></div>
+            <select id="cfg-phase" onchange="saveCfg();render()" style="width:200px;padding:7px 10px;border:1px solid var(--paper3);border-radius:var(--r);font-size:13px;font-family:inherit;background:var(--paper)">
+              <option>Preparación</option><option>Remodelación</option><option>Amueblado</option><option>Equipamiento</option><option>Operación</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--paper3);display:flex;gap:10px;justify-content:flex-end">
+          <button class="btn danger sm" onclick="resetData()"><i class="ti ti-refresh"></i> Resetear datos</button>
+        </div>
+      </div>
+      <div class="gist-card">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:.75rem">
+          <i class="ti ti-cloud" style="font-size:18px;color:var(--blue)"></i>
+          <span style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em">Sincronización — GitHub Gist</span>
+        </div>
+        <div class="gist-instructions">
+          <strong style="color:var(--ink);display:block;margin-bottom:.25rem">Cómo configurar:</strong>
+          1. Ve a <a href="https://github.com/settings/tokens/new" target="_blank" style="color:var(--blue)">github.com/settings/tokens/new</a><br>
+          2. Nombre: "airbnb-manager", expira 90 días<br>
+          3. Activa solo el permiso <code style="background:var(--paper3);padding:1px 5px;border-radius:3px">gist</code><br>
+          4. Pega el token abajo — nunca se comparte ni se envía a ningún servidor externo
+        </div>
+        <div class="cfg-list">
+          <div class="cfg-row" style="flex-wrap:wrap;gap:8px">
+            <div style="flex:1;min-width:200px"><div class="cfg-lbl">GitHub Token</div><div class="cfg-sub">Solo permiso "gist"</div></div>
+            <input id="cfg-token" type="password" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" style="width:100%;max-width:240px;padding:7px 10px;border:1px solid var(--paper3);border-radius:var(--r);font-size:12px;font-family:monospace;background:var(--paper)" onchange="saveGistCfg()">
+          </div>
+          <div class="cfg-row" style="flex-wrap:wrap;gap:8px">
+            <div style="flex:1;min-width:200px"><div class="cfg-lbl">Gist ID</div><div class="cfg-sub">Se llena automático</div></div>
+            <input id="cfg-gist-id" type="text" placeholder="Se genera automáticamente" style="width:100%;max-width:240px;padding:7px 10px;border:1px solid var(--paper3);border-radius:var(--r);font-size:12px;font-family:monospace;background:var(--paper)" onchange="saveGistCfg()">
+          </div>
+        </div>
+        <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--paper3);display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn primary sm" onclick="gistPush(true)"><i class="ti ti-cloud-upload"></i> Crear Gist</button>
+          <button class="btn sm" onclick="gistPush(false)"><i class="ti ti-refresh"></i> Sincronizar</button>
+          <button class="btn sm" onclick="gistPull()"><i class="ti ti-cloud-download"></i> Descargar</button>
+        </div>
+        <div id="gist-log"></div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+</div><!-- /app -->
+
+<div class="toast" id="toast"><i class="ti ti-check"></i><span id="toast-msg">Guardado</span></div>
+
+<script>
+// ══════════════════════════════════════════════════════
+// DATA MODEL
+// ══════════════════════════════════════════════════════
+const PHASES = [
+  {key:"Preparación",   color:"#5B3FA8", icon:"ti-tools"},
+  {key:"Remodelación",  color:"#C17F3A", icon:"ti-paint"},
+  {key:"Amueblado",     color:"#1D5FA8", icon:"ti-armchair"},
+  {key:"Equipamiento",  color:"#1A7A6E", icon:"ti-device-tv"},
+  {key:"Operación",     color:"#2D7A4F", icon:"ti-home-check"},
+];
+const PHASE_KEYS = PHASES.map(p=>p.key);
+
+const CATS = [
+  {key:"Muebles",        icon:"ti-sofa"},
+  {key:"Electrodoméstico",icon:"ti-washing-machine"},
+  {key:"Electrónico",    icon:"ti-device-tv"},
+  {key:"Iluminación",    icon:"ti-bulb"},
+  {key:"Decoración",     icon:"ti-plant-2"},
+  {key:"Construcción",   icon:"ti-hammer"},
+  {key:"Pintura",        icon:"ti-paint-filled"},
+  {key:"Plomería",       icon:"ti-droplet"},
+  {key:"Eléctrico",      icon:"ti-bolt"},
+  {key:"Aseo & Limpieza",icon:"ti-vacuum-cleaner"},
+  {key:"Servicios",      icon:"ti-wifi"},
+  {key:"Seguridad",      icon:"ti-lock"},
+  {key:"Textiles",       icon:"ti-ripple"},
+  {key:"Miscélaneo",     icon:"ti-package"},
+];
+const CAT_KEYS = CATS.map(c=>c.key);
+
+const TYPES = ["Único","Recurrente mensual","Recurrente anual"];
+const STATUSES = ["Pendiente","Por comprar","Pagado","En camino","Instalado"];
+const S_CLASS  = {Pendiente:"b-pend","Por comprar":"b-buy",Pagado:"b-done","En camino":"b-way",Instalado:"b-rec"};
+const S_ICON   = {Pendiente:"ti-clock","Por comprar":"ti-shopping-cart",Pagado:"ti-check","En camino":"ti-truck",Instalado:"ti-circle-check"};
+
+const DEFAULT = [
+  // PREPARACIÓN
+  {phase:"Preparación",cat:"Construcción",type:"Único",art:"Limpieza profunda pre-remodelación",store:"Servicio local",qty:1,price:3500,rec:false,notes:"",link:"",status:"Pendiente"},
+  {phase:"Preparación",cat:"Construcción",type:"Único",art:"Retiro de muebles y escombros",store:"Servicio local",qty:1,price:2000,rec:false,notes:"",link:"",status:"Pendiente"},
+  {phase:"Preparación",cat:"Plomería",    type:"Único",art:"Revisión y reparación de plomería",store:"Plomero",qty:1,price:4500,rec:false,notes:"",link:"",status:"Pendiente"},
+  {phase:"Preparación",cat:"Eléctrico",   type:"Único",art:"Revisión instalación eléctrica",store:"Electricista",qty:1,price:5000,rec:false,notes:"",link:"",status:"Pendiente"},
+  // REMODELACIÓN
+  {phase:"Remodelación",cat:"Pintura",    type:"Único",art:"Pintura blanca mate — sala/comedor",store:"Comex",qty:4,price:890,rec:false,notes:"Cubeta 19 lt c/u",link:"",status:"Pendiente"},
+  {phase:"Remodelación",cat:"Pintura",    type:"Único",art:"Pintura dormitorio + oficina",store:"Comex",qty:2,price:890,rec:false,notes:"",link:"",status:"Pendiente"},
+  {phase:"Remodelación",cat:"Pintura",    type:"Único",art:"Mano de obra pintura completa",store:"Maestro pintor",qty:1,price:8000,rec:false,notes:"",link:"",status:"Pendiente"},
+  {phase:"Remodelación",cat:"Construcción",type:"Único",art:"Reparación de pisos / nivelación",store:"Maestro",qty:1,price:6000,rec:false,notes:"",link:"",status:"Pendiente"},
+  {phase:"Remodelación",cat:"Eléctrico",  type:"Único",art:"Instalación puntos de luz extra",store:"Electricista",qty:4,price:800,rec:false,notes:"",link:"",status:"Pendiente"},
+  // AMUEBLADO
+  {phase:"Amueblado",cat:"Muebles",       type:"Único",art:"Sofá 3 plazas gris",store:"Liverpool",qty:1,price:18990,rec:false,notes:"",link:"",status:"Pendiente"},
+  {phase:"Amueblado",cat:"Muebles",       type:"Único",art:"Mesa comedor 4 personas",store:"Liverpool",qty:1,price:7990,rec:false,notes:"",link:"",status:"Pendiente"},
+  {phase:"Amueblado",cat:"Muebles",       type:"Único",art:"Sillas comedor",store:"Liverpool",qty:4,price:1290,rec:false,notes:"",link:"",status:"Pendiente"},
+  {phase:"Amueblado",cat:"Muebles",       type:"Único",art:"Cama Queen con cabecera",store:"Liverpool",qty:1,price:12990,rec:false,notes:"",link:"",status:"Pendiente"},
+  {phase:"Amueblado",cat:"Muebles",       type:"Único",art:"Colchón Queen premium",store:"Liverpool",qty:1,price:15990,rec:false,notes:"",link:"",status:"Pendiente"},
+  {phase:"Amueblado",cat:"Muebles",       type:"Único",art:"Buró x2",store:"Liverpool",qty:2,price:2490,rec:false,notes:"",link:"",status:"Pendiente"},
+  {phase:"Amueblado",cat:"Muebles",       type:"Único",art:"Escritorio oficina",store:"Liverpool",qty:1,price:5990,rec:false,notes:"",link:"",status:"Pendiente"},
+  {phase:"Amueblado",cat:"Muebles",       type:"Único",art:"Silla ergonómica",store:"Liverpool",qty:1,price:4990,rec:false,notes:"",link:"",status:"Pendiente"},
+  {phase:"Amueblado",cat:"Textiles",      type:"Único",art:"Juego sábanas Queen 400h x2",store:"Liverpool",qty:2,price:1990,rec:false,notes:"",link:"",status:"Pendiente"},
+  {phase:"Amueblado",cat:"Textiles",      type:"Único",art:"Edredón queen + funda",store:"Liverpool",qty:1,price:3490,rec:false,notes:"",link:"",status:"Pendiente"},
+  {phase:"Amueblado",cat:"Textiles",      type:"Único",art:"Almohadas premium x4",store:"Liverpool",qty:4,price:890,rec:false,notes:"",link:"",status:"Pendiente"},
+  {phase:"Amueblado",cat:"Decoración",    type:"Único",art:"Tapete sala 160x230 cm",store:"Liverpool",qty:1,price:4990,rec:false,notes:"",link:"",status:"Pendiente"},
+  {phase:"Amueblado",cat:"Decoración",    type:"Único",art:"Tapete recámara 120x170 cm",store:"Liverpool",qty:1,price:2990,rec:false,notes:"",link:"",status:"Pendiente"},
+  {phase:"Amueblado",cat:"Decoración",    type:"Único",art:"Cuadros decorativos set x3",store:"Liverpool",qty:1,price:1990,rec:false,notes:"",link:"",status:"Pendiente"},
+  // EQUIPAMIENTO
+  {phase:"Equipamiento",cat:"Electrónico",type:"Único",art:'Smart TV 75" QD-Mini LED',store:"Liverpool",qty:1,price:23129,rec:false,notes:"TCL 75QM7K",link:"",status:"Pendiente"},
+  {phase:"Equipamiento",cat:"Electrónico",type:"Único",art:"Barra de sonido Arc Ultra",store:"Liverpool",qty:1,price:18900,rec:false,notes:"",link:"",status:"Pendiente"},
+  {phase:"Equipamiento",cat:"Electrónico",type:"Único",art:"Router WiFi 6",store:"Liverpool",qty:1,price:2490,rec:false,notes:"",link:"",status:"Pendiente"},
+  {phase:"Equipamiento",cat:"Electrodoméstico",type:"Único",art:"Refrigerador Samsung 11 pies",store:"Liverpool",qty:1,price:11051,rec:false,notes:"",link:"",status:"Pendiente"},
+  {phase:"Equipamiento",cat:"Electrodoméstico",type:"Único",art:"Microondas integrable",store:"Liverpool",qty:1,price:3990,rec:false,notes:"",link:"",status:"Pendiente"},
+  {phase:"Equipamiento",cat:"Electrodoméstico",type:"Único",art:"Nespresso Vertuo",store:"Liverpool",qty:1,price:6291,rec:false,notes:"",link:"",status:"Pendiente"},
+  {phase:"Equipamiento",cat:"Iluminación",type:"Único",art:"Lámpara de piso sala",store:"Liverpool",qty:1,price:2490,rec:false,notes:"",link:"",status:"Pendiente"},
+  {phase:"Equipamiento",cat:"Iluminación",type:"Único",art:"Lámparas de buró x2",store:"Liverpool",qty:2,price:990,rec:false,notes:"",link:"",status:"Pendiente"},
+  {phase:"Equipamiento",cat:"Seguridad",  type:"Único",art:"Cerradura digital smart",store:"Amazon",qty:1,price:4990,rec:false,notes:"",link:"",status:"Pendiente"},
+  {phase:"Equipamiento",cat:"Seguridad",  type:"Único",art:"Cámara exterior doorbell",store:"Amazon",qty:1,price:3500,rec:false,notes:"",link:"",status:"Pendiente"},
+  // OPERACIÓN (recurrentes)
+  {phase:"Operación",cat:"Servicios",   type:"Recurrente mensual",art:"Internet fibra óptica",store:"Izzi / Telmex",qty:1,price:599,rec:true,notes:"",link:"",status:"Pendiente"},
+  {phase:"Operación",cat:"Servicios",   type:"Recurrente mensual",art:"Gas LP (tanque)",store:"Gasera local",qty:1,price:400,rec:true,notes:"",link:"",status:"Pendiente"},
+  {phase:"Operación",cat:"Servicios",   type:"Recurrente mensual",art:"Servicio de limpieza",store:"Freelance",qty:4,price:300,rec:true,notes:"4 limpiezas/mes",link:"",status:"Pendiente"},
+  {phase:"Operación",cat:"Servicios",   type:"Recurrente mensual",art:"Suscripción Airbnb Pro",store:"Airbnb",qty:1,price:0,rec:true,notes:"Fee variable por reserva",link:"",status:"Pendiente"},
+  {phase:"Operación",cat:"Aseo & Limpieza",type:"Único",art:"Kit amenidades huéspedes (mes 1)",store:"Mercado libre",qty:1,price:2500,rec:false,notes:"Shampoo, gel, toallas, etc",link:"",status:"Pendiente"},
+  {phase:"Operación",cat:"Aseo & Limpieza",type:"Recurrente mensual",art:"Reposición amenidades",store:"Costco",qty:1,price:800,rec:true,notes:"",link:"",status:"Pendiente"},
+  {phase:"Operación",cat:"Miscélaneo",  type:"Único",art:"Fotografía profesional",store:"Fotógrafo",qty:1,price:3500,rec:false,notes:"Para publicación en Airbnb",link:"",status:"Pendiente"},
+  {phase:"Operación",cat:"Miscélaneo",  type:"Único",art:"Caja de llaves / lockbox",store:"Amazon",qty:1,price:890,rec:false,notes:"",link:"",status:"Pendiente"},
+];
+
+let items  = JSON.parse(localStorage.getItem('airbnb_pro_items')||'null') || DEFAULT.map((x,i)=>({...x,id:i}));
+let cfg    = JSON.parse(localStorage.getItem('airbnb_pro_cfg')||'null')   || {budget:350000,name:'Airbnb GDL',phase:'Preparación'};
+let gistCfg= JSON.parse(localStorage.getItem('airbnb_pro_gist')||'null')  || {token:'',gistId:''};
+let nextId = items.length ? Math.max(...items.map(x=>x.id))+1 : 0;
+let fPhase = 'Todos', fCat = 'Todos', fType = 'Todos';
+let currentPage = 'dashboard';
+
+// ── Helpers ──────────────────────────────────────────
+const fmt  = n => '$'+Math.round(n).toLocaleString('es-MX');
+const pTot = x => x.qty * x.price;
+
+function saveItems(){ localStorage.setItem('airbnb_pro_items', JSON.stringify(items)); scheduleSync(); }
+function saveCfg(){
+  cfg.budget = +document.getElementById('cfg-budget')?.value || 350000;
+  cfg.name   =  document.getElementById('cfg-name')?.value  || 'Airbnb GDL';
+  cfg.phase  =  document.getElementById('cfg-phase')?.value || 'Preparación';
+  localStorage.setItem('airbnb_pro_cfg', JSON.stringify(cfg));
+  scheduleSync();
+}
+function saveGistCfg(){
+  gistCfg.token  = document.getElementById('cfg-token')?.value?.trim()   || gistCfg.token;
+  gistCfg.gistId = document.getElementById('cfg-gist-id')?.value?.trim() || gistCfg.gistId;
+  localStorage.setItem('airbnb_pro_gist', JSON.stringify(gistCfg));
+}
+
+function toast(msg,ok=true){
+  const t=document.getElementById('toast');
+  t.querySelector('i').className='ti '+(ok?'ti-check':'ti-alert-circle');
+  document.getElementById('toast-msg').textContent=msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+function nav(page){
+  currentPage=page;
+  document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(e=>e.classList.remove('active'));
+  const pages=['dashboard','gastos','agregar','checklist','ingresos','config'];
+  const idx=pages.indexOf(page);
+  if(idx>=0) document.querySelectorAll('.nav-item')[idx].classList.add('active');
+  document.getElementById('p-'+page).classList.add('active');
+  const titles={dashboard:'Dashboard',gastos:'Gastos del proyecto',agregar:'Agregar gasto',checklist:'Checklist por fase',ingresos:'Ingresos & ROI',config:'Configuración'};
+  document.getElementById('page-title').textContent=titles[page]||page;
+  closeSidebar();
+  render();
+}
+function toggleSidebar(){ document.getElementById('sidebar').classList.toggle('open'); document.getElementById('overlay').classList.toggle('show'); }
+function closeSidebar(){ document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
+
+// ── RENDER DASHBOARD ────────────────────────────────
+function renderKPIs(){
+  const one = items.filter(x=>x.type==='Único');
+  const rec = items.filter(x=>x.type!=='Único');
+  const total    = one.reduce((s,x)=>s+pTot(x),0);
+  const paid     = items.filter(x=>['Pagado','Instalado'].includes(x.status)).reduce((s,x)=>s+pTot(x),0);
+  const monthly  = items.filter(x=>x.type==='Recurrente mensual').reduce((s,x)=>s+pTot(x),0);
+  const rest     = cfg.budget - total;
+  const restCls  = rest<0?'red':rest<50000?'amber':'';
+  document.getElementById('kpis').innerHTML = `
+    <div class="kpi" style="--kpi-accent:#5B3FA8"><i class="ti ti-target kpi-icon"></i>
+      <div class="lbl">Presupuesto total</div><div class="val">${fmt(cfg.budget)}</div><div class="sub">Inversión planificada</div></div>
+    <div class="kpi" style="--kpi-accent:#C17F3A"><i class="ti ti-receipt kpi-icon"></i>
+      <div class="lbl">Inversión única total</div><div class="val">${fmt(total)}</div><div class="sub">${one.length} gastos únicos</div></div>
+    <div class="kpi" style="--kpi-accent:#2D7A4F"><i class="ti ti-check kpi-icon"></i>
+      <div class="lbl">Ya pagado</div><div class="val green">${fmt(paid)}</div><div class="sub">de ${fmt(total)}</div></div>
+    <div class="kpi" style="--kpi-accent:#C0392B"><i class="ti ti-calendar-repeat kpi-icon"></i>
+      <div class="lbl">Costo mensual fijo</div><div class="val ${monthly>0?'amber':''}">${fmt(monthly)}</div><div class="sub">Recurrentes / mes</div></div>
+    <div class="kpi" style="--kpi-accent:${rest<0?'#C0392B':'#1A7A6E'}"><i class="ti ti-wallet kpi-icon"></i>
+      <div class="lbl">Presupuesto restante</div><div class="val ${restCls}">${fmt(rest)}</div><div class="sub">${rest<0?'Excede presupuesto':'Disponible'}</div></div>
+  `;
+  const pct = total>0?Math.min(100,Math.round(paid/total*100)):0;
+  document.getElementById('prog-fill').style.width=pct+'%';
+  document.getElementById('prog-label').textContent=pct+'%';
+  document.getElementById('topbar-badge').textContent=cfg.phase.toUpperCase();
+}
+
+function renderPhaseGrid(){
+  const el=document.getElementById('phase-grid');
+  if(!el) return;
+  el.innerHTML=PHASES.map(ph=>{
+    const its=items.filter(x=>x.phase===ph.key&&x.type==='Único');
+    const tot=its.reduce((s,x)=>s+pTot(x),0);
+    const done=its.filter(x=>['Pagado','Instalado'].includes(x.status)).length;
+    const pct=its.length?Math.round(done/its.length*100):0;
+    return `<div class="phase-card" style="--ph-color:${ph.color}" onclick="fPhase='${ph.key}';nav('gastos')">
+      <div class="ph-name"><i class="ti ${ph.icon}" style="margin-right:5px;color:${ph.color}"></i>${ph.key}</div>
+      <div class="ph-amt">${fmt(tot)}</div>
+      <div class="ph-bar-track"><div class="ph-bar-fill" style="width:${pct}%"></div></div>
+      <div class="ph-meta"><span>${its.length} gastos</span><span>${done} pagados · ${pct}%</span></div>
+    </div>`;
+  }).join('');
+}
+
+function renderCatGrid(){
+  const el=document.getElementById('cat-grid');
+  if(!el) return;
+  el.innerHTML=CATS.map(c=>{
+    const its=items.filter(x=>x.cat===c.key);
+    if(!its.length) return '';
+    const tot=its.reduce((s,x)=>s+pTot(x),0);
+    return `<div class="phase-card" style="--ph-color:var(--ink3);cursor:pointer" onclick="fCat='${c.key}';nav('gastos')">
+      <div class="ph-name"><i class="ti ${c.icon}" style="margin-right:5px"></i>${c.key}</div>
+      <div class="ph-amt" style="font-size:16px">${fmt(tot)}</div>
+      <div class="ph-meta"><span>${its.length} items</span></div>
+    </div>`;
+  }).join('');
+}
+
+// ── RENDER FILTERS ──────────────────────────────────
+function renderFilters(){
+  const bar1=document.getElementById('filter-phase');
+  const bar2=document.getElementById('filter-cat');
+  const bar3=document.getElementById('filter-type');
+  if(bar1) bar1.innerHTML=['Todos',...PHASE_KEYS].map(k=>`<div class="chip ${k===fPhase?'active active-phase':''}" onclick="fPhase='${k}';render()">${k}</div>`).join('');
+  if(bar2) bar2.innerHTML=['Todos',...CAT_KEYS].map(k=>`<div class="chip ${k===fCat?'active':''}" onclick="fCat='${k}';render()">${k}</div>`).join('');
+  if(bar3) bar3.innerHTML=['Todos',...TYPES].map(k=>`<div class="chip ${k===fType?'active active-sub':''}" onclick="fType='${k}';render()">${k}</div>`).join('');
+}
+
+// ── RENDER TABLE ────────────────────────────────────
+function renderTable(){
+  const search=(document.getElementById('search')||{}).value?.toLowerCase()||'';
+  const body=document.getElementById('gastos-body');
+  if(!body) return;
+  let f=items;
+  if(fPhase!=='Todos') f=f.filter(x=>x.phase===fPhase);
+  if(fCat!=='Todos')   f=f.filter(x=>x.cat===fCat);
+  if(fType!=='Todos')  f=f.filter(x=>x.type===fType);
+  if(search) f=f.filter(x=>x.art.toLowerCase().includes(search)||x.store.toLowerCase().includes(search)||x.phase.toLowerCase().includes(search)||x.cat.toLowerCase().includes(search));
+
+  // Totals bar
+  const bar=document.getElementById('totals-bar');
+  if(bar){
+    const tTotal=f.reduce((s,x)=>s+pTot(x),0);
+    const tPaid =f.filter(x=>['Pagado','Instalado'].includes(x.status)).reduce((s,x)=>s+pTot(x),0);
+    const tPend =tTotal-tPaid;
+    const nRec  =f.filter(x=>x.type!=='Único').length;
+    const lbl   =[fPhase!=='Todos'?fPhase:null,fCat!=='Todos'?fCat:null,fType!=='Todos'?fType:null].filter(Boolean).join(' · ')||'Todos';
+    const pill=(lbl,val,col)=>`<div class="tpill"><span>${lbl}</span><span style="color:${col}">${val}</span></div>`;
+    bar.innerHTML=`<span class="tb-label">${lbl}</span><span class="tb-count">${f.length} items</span>`
+      +pill('Total',fmt(tTotal),'#fff')
+      +pill('Pagado',fmt(tPaid),'#4ade80')
+      +pill('Pendiente',fmt(tPend),'#fbbf24')
+      +(nRec>0?pill('Recurrentes',nRec+' items','#93c5fd'):'');
+  }
+
+  if(!f.length){body.innerHTML=`<tr><td colspan="12"><div class="empty"><i class="ti ti-package-off"></i>Sin gastos</div></td></tr>`;return;}
+
+  const ph=ph=>PHASES.find(p=>p.key===ph);
+  body.innerHTML=f.map(x=>{
+    const tot=pTot(x);
+    const sc=S_CLASS[x.status]||'b-pend';
+    const si=S_ICON[x.status]||'ti-clock';
+    const phColor=ph(x.phase)?.color||'#888';
+    const catIcon=CATS.find(c=>c.key===x.cat)?.icon||'ti-package';
+    const linkCell=x.link
+      ?`<td style="text-align:center"><a href="${x.link}" target="_blank" rel="noopener" style="color:var(--blue);font-size:17px"><i class="ti ti-external-link"></i></a></td>`
+      :`<td style="text-align:center;color:var(--ink4)"><i class="ti ti-link-off" style="font-size:15px"></i></td>`;
+    return `<tr>
+      <td><span class="tag" style="background:${phColor}22;color:${phColor};font-size:10px">${x.phase}</span></td>
+      <td><span class="tag" style="background:var(--paper2);color:var(--ink2)"><i class="ti ${catIcon}" style="font-size:10px;margin-right:2px"></i>${x.cat}</span></td>
+      <td style="font-weight:600;max-width:200px">${x.art}${x.notes?`<div style="font-size:11px;color:var(--ink3);margin-top:1px">${x.notes}</div>`:''}</td>
+      <td style="font-size:11px;color:var(--ink2)">${x.type}</td>
+      <td style="color:var(--ink2)">${x.store}</td>
+      <td class="r">${x.qty}</td>
+      <td class="r mono" style="color:var(--ink2)">${fmt(x.price)}</td>
+      <td class="r mono" style="font-weight:700">${fmt(tot)}</td>
+      <td><div class="status-wrap"><span class="badge ${sc}"><i class="ti ${si}" style="font-size:11px"></i>${x.status}</span>
+        <select class="status-sel" onchange="changeStatus(${x.id},this.value)">${STATUSES.map(s=>`<option value="${s}" ${s===x.status?'selected':''}>${s}</option>`).join('')}</select>
+      </div></td>
+      <td style="text-align:center">${x.rec?'<i class="ti ti-refresh" style="color:var(--blue);font-size:15px" title="Recurrente"></i>':'<span style="color:var(--ink4)">—</span>'}</td>
+      ${linkCell}
+      <td><button class="btn sm danger" onclick="delItem(${x.id})" title="Eliminar"><i class="ti ti-trash"></i></button></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── RENDER CHECKLIST ────────────────────────────────
+function renderChecklist(){
+  const el=document.getElementById('p-checklist');
+  if(!el) return;
+  el.innerHTML=PHASES.map(ph=>{
+    const phItems=items.filter(x=>x.phase===ph.key);
+    if(!phItems.length) return '';
+    const done=phItems.filter(x=>['Pagado','Instalado'].includes(x.status)).length;
+    const pct=Math.round(done/phItems.length*100);
+    const catsPresent=CATS.filter(c=>phItems.some(x=>x.cat===c.key));
+    const subRows=catsPresent.map(c=>{
+      const its=phItems.filter(x=>x.cat===c.key);
+      return `<div style="border-bottom:1px solid var(--paper3)">
+        <div class="sub-hdr" style="color:${ph.color}"><i class="ti ${c.icon}"></i>${c.key}</div>
+        ${its.map(x=>`
+          <div class="chk-item ${['Pagado','Instalado'].includes(x.status)?'done':''}">
+            <input type="checkbox" ${['Pagado','Instalado'].includes(x.status)?'checked':''} onchange="toggleDone(${x.id},this.checked)">
+            <span class="art">${x.art}</span>
+            <span class="chk-price">${fmt(pTot(x))}</span>
+            ${x.link?`<a href="${x.link}" target="_blank" rel="noopener" style="color:var(--blue);font-size:14px;flex-shrink:0"><i class="ti ti-external-link"></i></a>`:''}
+            <span class="store-tag">${x.store}</span>
+            ${x.rec?'<span class="store-tag" style="background:var(--blue-bg);color:var(--blue)"><i class="ti ti-refresh" style="font-size:10px"></i></span>':''}
+          </div>`).join('')}
+      </div>`;
+    }).join('');
+    return `<div class="space-section">
+      <div class="space-hdr" style="border-top:3px solid ${ph.color}">
+        <span><i class="ti ${ph.icon}" style="margin-right:6px;font-size:15px;color:${ph.color}"></i>${ph.key}</span>
+        <div style="text-align:right">
+          <div class="prog">${done}/${phItems.length} · ${pct}%</div>
+          <div style="height:3px;background:rgba(255,255,255,.15);border-radius:2px;width:80px;margin-top:4px">
+            <div style="width:${pct}%;height:3px;background:${ph.color};border-radius:2px;transition:width .3s"></div>
+          </div>
+        </div>
+      </div>
+      ${subRows}
+    </div>`;
+  }).join('');
+}
+
+// ── RENDER ROI ──────────────────────────────────────
+function calcROI(){
+  const noche  =+document.getElementById('roi-noche')?.value||1800;
+  const ocup   =+document.getElementById('roi-ocup')?.value||65;
+  const dias   =+document.getElementById('roi-dias')?.value||30;
+  const fee    =+document.getElementById('roi-fee')?.value||3;
+  const internet=+document.getElementById('roi-internet')?.value||600;
+  const gas    =+document.getElementById('roi-gas')?.value||400;
+  const limpStr=+document.getElementById('roi-limpieza')?.value||800;
+  const otros  =+document.getElementById('roi-otros')?.value||500;
+
+  const diasOcup   = dias*(ocup/100);
+  const ingresoB   = diasOcup*noche;
+  const feeAmt     = ingresoB*(fee/100);
+  const ingresoN   = ingresoB-feeAmt;
+  const costoFijos = internet+gas+limpStr+otros;
+  const recItems   = items.filter(x=>x.type==='Recurrente mensual').reduce((s,x)=>s+pTot(x),0);
+  const totalFijos = costoFijos+recItems;
+  const utilidad   = ingresoN-totalFijos;
+  const inversion  = items.filter(x=>x.type==='Único').reduce((s,x)=>s+pTot(x),0);
+  const payback    = utilidad>0?Math.ceil(inversion/utilidad):null;
+  const roiAnual   = inversion>0?(utilidad*12/inversion*100):0;
+
+  const el=document.getElementById('roi-kpis');
+  if(el) el.innerHTML=`
+    <div class="kpi" style="--kpi-accent:#1A7A6E"><div class="lbl">Ingreso bruto/mes</div><div class="val green">${fmt(ingresoB)}</div><div class="sub">${Math.round(diasOcup)} noches / mes</div></div>
+    <div class="kpi" style="--kpi-accent:#1D5FA8"><div class="lbl">Ingreso neto/mes</div><div class="val">${fmt(ingresoN)}</div><div class="sub">después de fee Airbnb</div></div>
+    <div class="kpi" style="--kpi-accent:#C0392B"><div class="lbl">Costos fijos/mes</div><div class="val amber">${fmt(totalFijos)}</div><div class="sub">fijos + recurrentes</div></div>
+    <div class="kpi" style="--kpi-accent:${utilidad>0?'#2D7A4F':'#C0392B'}"><div class="lbl">Utilidad/mes</div><div class="val ${utilidad>0?'green':'red'}">${fmt(utilidad)}</div><div class="sub">${roiAnual.toFixed(1)}% ROI anual</div></div>
+    <div class="kpi" style="--kpi-accent:#5B3FA8"><div class="lbl">Payback</div><div class="val">${payback?payback+' meses':'—'}</div><div class="sub">${payback?'para recuperar inversión':'sin utilidad'}</div></div>
+  `;
+
+  const chart=document.getElementById('roi-chart');
+  if(chart){
+    const rows=[
+      {lbl:'Ingreso bruto',val:ingresoB,col:'#1A7A6E'},
+      {lbl:`Fee Airbnb (${fee}%)`,val:-feeAmt,col:'#888'},
+      {lbl:'Ingreso neto',val:ingresoN,col:'#1D5FA8'},
+      {lbl:'Costos fijos',val:-totalFijos,col:'#C0392B'},
+      {lbl:'Utilidad mensual',val:utilidad,col:utilidad>0?'#2D7A4F':'#C0392B'},
+    ];
+    const maxAbs=Math.max(...rows.map(r=>Math.abs(r.val)));
+    chart.innerHTML=rows.map(r=>{
+      const pct=Math.round(Math.abs(r.val)/maxAbs*100);
+      const isNeg=r.val<0;
+      return `<div style="display:flex;align-items:center;gap:10px;font-size:13px">
+        <span style="width:160px;color:var(--ink2);flex-shrink:0;font-weight:${r.lbl==='Utilidad mensual'?'700':'400'}">${r.lbl}</span>
+        <div style="flex:1;height:22px;background:var(--paper2);border-radius:4px;overflow:hidden">
+          <div style="width:${pct}%;height:100%;background:${r.col};opacity:${isNeg?.5:1};border-radius:4px;transition:width .4s"></div>
+        </div>
+        <span style="width:90px;text-align:right;font-family:'DM Mono',monospace;font-size:12px;font-weight:600;color:${r.col}">${r.val<0?'-':''}${fmt(Math.abs(r.val))}</span>
+      </div>`;
+    }).join('');
+  }
+}
+
+// ── POPULATE SELECTS ────────────────────────────────
+function populateSelects(){
+  const p=document.getElementById('f-phase');
+  const c=document.getElementById('f-cat');
+  const t=document.getElementById('f-type');
+  if(p) p.innerHTML=PHASE_KEYS.map(k=>`<option value="${k}">${k}</option>`).join('');
+  if(c) c.innerHTML=CAT_KEYS.map(k=>`<option value="${k}">${k}</option>`).join('');
+  if(t) t.innerHTML=TYPES.map(k=>`<option value="${k}">${k}</option>`).join('');
+}
+
+function renderCfgInputs(){
+  const g=id=>document.getElementById(id);
+  if(g('cfg-budget')) g('cfg-budget').value=cfg.budget;
+  if(g('cfg-name'))   g('cfg-name').value=cfg.name;
+  if(g('cfg-phase'))  g('cfg-phase').value=cfg.phase;
+  if(g('cfg-token'))  g('cfg-token').value=gistCfg.token||'';
+  if(g('cfg-gist-id'))g('cfg-gist-id').value=gistCfg.gistId||'';
+}
+
+// ── ACTIONS ─────────────────────────────────────────
+function changeStatus(id,val){
+  const x=items.find(i=>i.id===id);
+  if(x){x.status=val;saveItems();render();}
+}
+function toggleDone(id,checked){
+  const x=items.find(i=>i.id===id);
+  if(x){x.status=checked?'Pagado':'Pendiente';saveItems();render();toast(checked?'Marcado como pagado':'Desmarcado');}
+}
+function delItem(id){
+  if(!confirm('¿Eliminar este gasto?')) return;
+  items=items.filter(x=>x.id!==id);
+  saveItems();render();toast('Gasto eliminado');
+}
+function addItem(){
+  const art=document.getElementById('f-art').value.trim();
+  const price=parseFloat(document.getElementById('f-price').value)||0;
+  if(!art){alert('Escribe la descripción.');return;}
+  if(!price){alert('Escribe el precio.');return;}
+  const rec=document.getElementById('f-rec').checked;
+  items.push({
+    id:nextId++,
+    phase: document.getElementById('f-phase').value,
+    cat:   document.getElementById('f-cat').value,
+    type:  document.getElementById('f-type').value,
+    art, store: document.getElementById('f-store').value.trim(),
+    qty:   parseInt(document.getElementById('f-qty').value)||1,
+    price, rec,
+    notes: document.getElementById('f-notes').value.trim(),
+    link:  document.getElementById('f-link').value.trim(),
+    status:'Pendiente',
+  });
+  ['f-art','f-price','f-notes','f-link','f-store'].forEach(id=>{document.getElementById(id).value='';});
+  document.getElementById('f-qty').value='1';
+  document.getElementById('f-rec').checked=false;
+  saveItems();render();nav('gastos');toast('Gasto agregado');
+}
+function resetData(){
+  if(!confirm('¿Resetear todos los gastos?')) return;
+  items=DEFAULT.map((x,i)=>({...x,id:i}));
+  nextId=items.length;
+  saveItems();render();toast('Datos reseteados');
+}
+
+// ── EXPORT ──────────────────────────────────────────
+function exportCSV(){
+  const h=['Fase','Categoria','Descripcion','Tipo','Proveedor','Cantidad','Precio Unit MXN','Total MXN','Estatus','Recurrente','Link','Notas'];
+  const rows=items.map(x=>[x.phase,x.cat,x.art,x.type,x.store,x.qty,x.price,pTot(x),x.status,x.rec?'Sí':'No',x.link||'',x.notes||'']
+    .map(v=>`"${String(v).replace(/"/g,'""')}"`).join(','));
+  const blob=new Blob(['\uFEFF'+[h.join(','),...rows].join('\r\n')],{type:'text/csv;charset=utf-8;'});
+  const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(blob),download:`AirbnbManager_${new Date().toISOString().slice(0,10)}.csv`});
+  document.body.appendChild(a);a.click();a.remove();toast('CSV descargado');
+}
+function exportXLS(){
+  const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const sC=(v,sid)=>`<Cell${sid?` ss:StyleID="${sid}"`:''}><Data ss:Type="String">${esc(v)}</Data></Cell>`;
+  const nC=(v,sid)=>`<Cell${sid?` ss:StyleID="${sid}"`:''}><Data ss:Type="Number">${v}</Data></Cell>`;
+  const rows=items.map(x=>`<Row>${sC(x.phase,'cat')}${sC(x.cat)}${sC(x.art)}${sC(x.type)}${sC(x.store)}${nC(x.qty,'num')}${nC(x.price,'mxn')}${nC(pTot(x),'mxnb')}${sC(x.status,'st')}${sC(x.rec?'Sí':'No')}${sC(x.link||'')}${sC(x.notes||'')}</Row>`).join('');
+  const xml=`<?xml version="1.0" encoding="UTF-8"?><?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+<Styles>
+  <Style ss:ID="hdr"><Font ss:Bold="1" ss:Color="#FFFFFF" ss:Size="11"/><Interior ss:Color="#0D0D0F" ss:Pattern="Solid"/></Style>
+  <Style ss:ID="cat"><Font ss:Size="10"/><Interior ss:Color="#EFEDE7" ss:Pattern="Solid"/></Style>
+  <Style ss:ID="num"><Alignment ss:Horizontal="Center"/></Style>
+  <Style ss:ID="mxn"><NumberFormat ss:Format="#,##0.00&quot; MXN&quot;"/><Font ss:Color="#6b6b72"/></Style>
+  <Style ss:ID="mxnb"><NumberFormat ss:Format="#,##0.00&quot; MXN&quot;"/><Font ss:Bold="1"/></Style>
+  <Style ss:ID="st"><Alignment ss:Horizontal="Center"/></Style>
+</Styles>
+<Worksheet ss:Name="Gastos">
+<Table>
+  <Column ss:Width="100"/><Column ss:Width="120"/><Column ss:Width="220"/><Column ss:Width="110"/>
+  <Column ss:Width="120"/><Column ss:Width="55"/><Column ss:Width="110"/><Column ss:Width="110"/>
+  <Column ss:Width="90"/><Column ss:Width="60"/><Column ss:Width="180"/><Column ss:Width="160"/>
+  <Row ss:Height="28">${['Fase','Categoría','Descripción','Tipo','Proveedor','Cant.','Precio unit.','Total','Estatus','Rec.','Link','Notas'].map(h=>`<Cell ss:StyleID="hdr"><Data ss:Type="String">${h}</Data></Cell>`).join('')}</Row>
+  ${rows}
+</Table></Worksheet></Workbook>`;
+  const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(new Blob([xml],{type:'application/vnd.ms-excel;charset=utf-8;'})),download:`AirbnbManager_${new Date().toISOString().slice(0,10)}.xls`});
+  document.body.appendChild(a);a.click();a.remove();toast('Excel descargado');
+}
+
+// ── GIST SYNC ───────────────────────────────────────
+function setSyncStatus(s){
+  const dot=document.getElementById('sync-dot');
+  const lbl=document.getElementById('sync-label');
+  if(!dot) return;
+  dot.className='sync-dot';
+  if(s==='ok'){dot.classList.add('ok');lbl.textContent='Sincronizado';}
+  else if(s==='err'){dot.classList.add('err');lbl.textContent='Error';}
+  else if(s==='syncing'){dot.classList.add('spin');lbl.textContent='Sincronizando…';}
+  else{lbl.textContent='Local';}
+}
+function gistLog(m){const el=document.getElementById('gist-log');if(el)el.textContent=m;}
+
+async function gistReq(method,path,body){
+  const r=await fetch('https://api.github.com'+path,{method,headers:{'Authorization':'Bearer '+gistCfg.token,'Accept':'application/vnd.github+json','Content-Type':'application/json','X-GitHub-Api-Version':'2022-11-28'},body:body?JSON.stringify(body):undefined});
+  if(!r.ok){const t=await r.text();throw new Error(`GitHub ${r.status}: ${t}`);}
+  return r.json();
+}
+function buildPayload(){return{description:'Airbnb Manager GDL — datos',public:false,files:{'airbnb_items.json':{content:JSON.stringify(items,null,2)},'airbnb_cfg.json':{content:JSON.stringify(cfg,null,2)}}};}
+
+async function gistPush(create=false){
+  if(!gistCfg.token){gistLog('⚠ Ingresa tu token primero.');return;}
+  setSyncStatus('syncing');gistLog('Sincronizando…');
+  try{
+    let d;
+    if(create||!gistCfg.gistId){d=await gistReq('POST','/gists',buildPayload());gistCfg.gistId=d.id;saveGistCfg();renderCfgInputs();gistLog('✓ Gist creado: '+d.id);}
+    else{await gistReq('PATCH','/gists/'+gistCfg.gistId,buildPayload());gistLog('✓ '+new Date().toLocaleTimeString('es-MX'));}
+    setSyncStatus('ok');toast('☁️ Guardado en Gist');
+  }catch(e){setSyncStatus('err');gistLog('✗ '+e.message);toast('Error al sincronizar',false);}
+}
+async function gistPull(){
+  if(!gistCfg.token||!gistCfg.gistId){gistLog('⚠ Configura token y Gist ID.');return;}
+  setSyncStatus('syncing');gistLog('Descargando…');
+  try{
+    const d=await gistReq('GET','/gists/'+gistCfg.gistId);
+    const ri=d.files['airbnb_items.json']?.content;
+    const rc=d.files['airbnb_cfg.json']?.content;
+    if(ri){items=JSON.parse(ri);nextId=items.length?Math.max(...items.map(x=>x.id))+1:0;localStorage.setItem('airbnb_pro_items',ri);}
+    if(rc){cfg=JSON.parse(rc);localStorage.setItem('airbnb_pro_cfg',rc);}
+    setSyncStatus('ok');gistLog('✓ '+new Date().toLocaleTimeString('es-MX'));toast('☁️ Datos actualizados');render();
+  }catch(e){setSyncStatus('err');gistLog('✗ '+e.message);}
+}
+
+let _syncT=null;
+function scheduleSync(){if(!gistCfg.token)return;clearTimeout(_syncT);setSyncStatus('syncing');_syncT=setTimeout(()=>gistPush(false),3000);}
+
+async function initSync(){
+  if(gistCfg.token&&gistCfg.gistId){setSyncStatus('syncing');try{await gistPull();}catch(e){setSyncStatus('err');}}
+  else setSyncStatus('local');
+}
+
+// ── MASTER RENDER ───────────────────────────────────
+function render(){
+  renderKPIs();
+  renderPhaseGrid();
+  renderCatGrid();
+  renderFilters();
+  renderTable();
+  renderChecklist();
+  renderCfgInputs();
+  populateSelects();
+  calcROI();
+  const s=document.getElementById('search');
+  if(s&&!s._b){s.addEventListener('input',()=>renderTable());s._b=true;}
+}
+
+const _sty=document.createElement('style');
+_sty.textContent='@keyframes spin{to{transform:rotate(360deg)}}';
+document.head.appendChild(_sty);
+
+render();
+initSync();
+</script>
+</body>
+</html>
