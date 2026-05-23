@@ -600,6 +600,28 @@ function saveGistCfg(){
   gistCfg.token  = document.getElementById('cfg-token')?.value?.trim()   || gistCfg.token;
   gistCfg.gistId = document.getElementById('cfg-gist-id')?.value?.trim() || gistCfg.gistId;
   localStorage.setItem('airbnb_pro_gist', JSON.stringify(gistCfg));
+  // Keep gistId in URL so any device that opens the same URL auto-discovers it
+  if(gistCfg.gistId){
+    const u = new URL(location.href);
+    u.searchParams.set('gist', gistCfg.gistId);
+    history.replaceState(null,'', u.toString());
+  }
+}
+
+// Read gistId from URL on boot (covers shared-link scenario)
+function readGistIdFromURL(){
+  const p = new URLSearchParams(location.search);
+  const id = p.get('gist');
+  if(id && !gistCfg.gistId){
+    gistCfg.gistId = id;
+    localStorage.setItem('airbnb_pro_gist', JSON.stringify(gistCfg));
+  }
+  // Always keep URL in sync with whatever gistId we know about
+  if(gistCfg.gistId && !p.get('gist')){
+    const u = new URL(location.href);
+    u.searchParams.set('gist', gistCfg.gistId);
+    history.replaceState(null,'', u.toString());
+  }
 }
 
 function toast(msg,ok=true){
@@ -1079,8 +1101,17 @@ async function gistPush(create=false){
   setSyncStatus('syncing');gistLog('Sincronizando…');
   try{
     let d;
-    if(create||!gistCfg.gistId){d=await gistReq('POST','/gists',buildPayload());gistCfg.gistId=d.id;saveGistCfg();renderCfgInputs();gistLog('✓ Gist creado: '+d.id);}
-    else{await gistReq('PATCH','/gists/'+gistCfg.gistId,buildPayload());gistLog('✓ '+new Date().toLocaleTimeString('es-MX'));}
+    if(create||!gistCfg.gistId){
+      d=await gistReq('POST','/gists',buildPayload());
+      gistCfg.gistId=d.id;
+      saveGistCfg();   // <-- writes ID to localStorage AND URL
+      renderCfgInputs();
+      showShareBanner();
+      gistLog('✓ Gist creado: '+d.id);
+    } else {
+      await gistReq('PATCH','/gists/'+gistCfg.gistId,buildPayload());
+      gistLog('✓ '+new Date().toLocaleTimeString('es-MX'));
+    }
     setSyncStatus('ok');toast('☁️ Guardado en Gist');
   }catch(e){setSyncStatus('err');gistLog('✗ '+e.message);toast('Error al sincronizar',false);}
 }
@@ -1101,8 +1132,70 @@ let _syncT=null;
 function scheduleSync(){if(!gistCfg.token)return;clearTimeout(_syncT);setSyncStatus('syncing');_syncT=setTimeout(()=>gistPush(false),3000);}
 
 async function initSync(){
-  if(gistCfg.token&&gistCfg.gistId){setSyncStatus('syncing');try{await gistPull();}catch(e){setSyncStatus('err');}}
-  else setSyncStatus('local');
+  readGistIdFromURL();  // pick up ?gist= from URL before anything else
+  if(gistCfg.token&&gistCfg.gistId){
+    setSyncStatus('syncing');
+    try{ await gistPull(); }
+    catch(e){ setSyncStatus('err'); }
+  } else if(gistCfg.gistId && !gistCfg.token){
+    // Has gistId from URL but no token yet — show prompt
+    setSyncStatus('local');
+    gistLog('ℹ Gist ID detectado en URL. Ingresa tu token para sincronizar.');
+    renderCfgInputs();
+    showTokenPrompt();
+  } else {
+    setSyncStatus('local');
+  }
+}
+
+function showTokenPrompt(){
+  // Show a subtle banner at top of config nudging the user to add their token
+  const existing = document.getElementById('token-prompt-banner');
+  if(existing) return;
+  const banner = document.createElement('div');
+  banner.id = 'token-prompt-banner';
+  banner.innerHTML = `
+    <div style="background:var(--amber-bg);border:1px solid var(--accent);border-radius:var(--r);padding:.75rem 1rem;margin-bottom:1rem;display:flex;align-items:center;gap:10px;font-size:13px;max-width:520px">
+      <i class="ti ti-key" style="font-size:18px;color:var(--accent);flex-shrink:0"></i>
+      <div>
+        <strong>Gist encontrado en la URL.</strong><br>
+        <span style="color:var(--ink2)">Ve a <b>Configuración → GitHub Token</b> e ingresa tu token para cargar los datos compartidos.</span>
+      </div>
+      <button onclick="this.parentElement.parentElement.remove()" style="background:none;border:none;cursor:pointer;font-size:16px;color:var(--ink3);margin-left:auto;flex-shrink:0">✕</button>
+    </div>`;
+  // Insert at top of config panel
+  const cfg = document.getElementById('p-config');
+  if(cfg) cfg.insertBefore(banner, cfg.firstChild);
+}
+
+function showShareBanner(){
+  const shareURL = location.href;
+  const existing = document.getElementById('share-banner');
+  if(existing){ existing.querySelector('input').value=shareURL; return; }
+  const banner = document.createElement('div');
+  banner.id = 'share-banner';
+  banner.innerHTML = `
+    <div style="background:var(--green-bg);border:1px solid var(--green);border-radius:var(--r);padding:.875rem 1rem;margin-bottom:1rem;max-width:520px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:.5rem">
+        <i class="ti ti-share" style="font-size:16px;color:var(--green)"></i>
+        <strong style="font-size:13px">¡Gist creado! Comparte esta URL con tu equipo</strong>
+        <button onclick="this.closest('#share-banner').remove()" style="background:none;border:none;cursor:pointer;font-size:16px;color:var(--ink3);margin-left:auto">✕</button>
+      </div>
+      <div style="display:flex;gap:6px">
+        <input id="share-url-input" readonly value="${shareURL}"
+          style="flex:1;padding:6px 10px;border:1px solid var(--paper3);border-radius:var(--r);font-size:11px;font-family:monospace;background:#fff;color:var(--ink2)">
+        <button class="btn sm teal" onclick="navigator.clipboard.writeText('${shareURL}').then(()=>toast('URL copiada'))">
+          <i class="ti ti-copy"></i> Copiar
+        </button>
+      </div>
+      <div style="font-size:11px;color:var(--ink3);margin-top:.5rem">
+        Cada colaborador necesita su propio GitHub token con permiso <code>gist</code> para editar.
+      </div>
+    </div>`;
+  const cfg = document.getElementById('p-config');
+  if(cfg) cfg.insertBefore(banner, cfg.firstChild);
+  // also show in current panel if not in config
+  if(currentPage!=='config') nav('config');
 }
 
 // ── MASTER RENDER ───────────────────────────────────
