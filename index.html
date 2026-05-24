@@ -118,6 +118,8 @@ a{color:inherit;text-decoration:none}
 .chip:hover{border-color:var(--ink3);color:var(--ink)}
 .chip.active{background:var(--ink);color:var(--accent2);border-color:var(--ink)}
 .chip.active-sub{background:var(--blue);color:#fff;border-color:var(--blue)}
+.chip.active-space{background:var(--teal);color:#fff;border-color:var(--teal)}
+.chip.active-store{background:var(--purple);color:#fff;border-color:var(--purple)}
 .chip.active-phase{background:var(--teal);color:#fff;border-color:var(--teal)}
 
 /* ── TOTALS BAR ── */
@@ -341,6 +343,10 @@ thead th.sortable.desc .sort-icon{opacity:1;color:var(--accent2)}
       <div class="phase-grid" id="phase-grid"></div>
       <div class="section-hdr" style="margin-top:1.25rem"><h2>Por categoría</h2></div>
       <div id="cat-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:1.5rem"></div>
+      <div class="section-hdr" style="margin-top:.25rem"><h2>Por departamento</h2></div>
+      <div id="space-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:1.5rem"></div>
+      <div class="section-hdr" style="margin-top:.25rem"><h2>Por proveedor</h2></div>
+      <div id="store-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:1.5rem"></div>
     </div>
 
     <!-- GASTOS -->
@@ -361,9 +367,17 @@ thead th.sortable.desc .sort-icon{opacity:1;color:var(--accent2)}
         <div class="filter-lbl">Categoría</div>
         <div class="filter-bar" id="filter-cat"></div>
       </div>
-      <div class="filter-section" style="margin-bottom:1rem">
+      <div class="filter-section">
         <div class="filter-lbl">Tipo</div>
         <div class="filter-bar" id="filter-type"></div>
+      </div>
+      <div class="filter-section">
+        <div class="filter-lbl">Departamento</div>
+        <div class="filter-bar" id="filter-space"></div>
+      </div>
+      <div class="filter-section" style="margin-bottom:1rem">
+        <div class="filter-lbl">Proveedor</div>
+        <div class="filter-bar" id="filter-store"></div>
       </div>
       <div class="totals-bar" id="totals-bar"></div>
       <div class="tbl-wrap">
@@ -383,6 +397,7 @@ thead th.sortable.desc .sort-icon{opacity:1;color:var(--accent2)}
         <div class="form-grid">
           <div class="fld"><label>Fase del proyecto</label><select id="f-phase"></select></div>
           <div class="fld"><label>Categoría</label><select id="f-cat"></select></div>
+          <div class="fld"><label>Departamento</label><select id="f-space"></select></div>
           <div class="fld"><label>Tipo</label><select id="f-type"></select></div>
           <div class="fld"><label>Proveedor / Tienda</label><input id="f-store" type="text" placeholder="Liverpool, IKEA, local…"></div>
           <div class="fld full"><label>Descripción</label><input id="f-art" type="text" placeholder="Ej: Pintura blanca mate 19 lt"></div>
@@ -521,6 +536,17 @@ const CATS = [
 ];
 const CAT_KEYS = CATS.map(c=>c.key);
 
+const SPACES = [
+  {key:"Sala",              icon:"ti-armchair"},
+  {key:"Comedor",           icon:"ti-tools-kitchen-2"},
+  {key:"Cocina",            icon:"ti-chef-hat"},
+  {key:"Baño general",      icon:"ti-bath"},
+  {key:"Oficina",           icon:"ti-briefcase"},
+  {key:"Habitación",        icon:"ti-bed"},
+  {key:"Baño de habitación",icon:"ti-bath"},
+];
+const SPACE_KEYS = SPACES.map(s=>s.key);
+
 const TYPES = ["Único","Recurrente mensual","Recurrente anual"];
 const STATUSES = ["Pendiente","Por comprar","Pagado","En camino","Instalado"];
 const S_CLASS  = {Pendiente:"b-pend","Por comprar":"b-buy",Pagado:"b-done","En camino":"b-way",Instalado:"b-rec"};
@@ -579,7 +605,7 @@ let items  = JSON.parse(localStorage.getItem('airbnb_pro_items')||'null') || DEF
 let cfg    = JSON.parse(localStorage.getItem('airbnb_pro_cfg')||'null')   || {budget:350000,name:'Airbnb GDL',phase:'Preparación'};
 let gistCfg= JSON.parse(localStorage.getItem('airbnb_pro_gist')||'null')  || {token:'',gistId:''};
 let nextId = items.length ? Math.max(...items.map(x=>x.id))+1 : 0;
-let fPhase = 'Todos', fCat = 'Todos', fType = 'Todos';
+let fPhase = 'Todos', fCat = 'Todos', fType = 'Todos', fSpace = 'Todos', fStore = 'Todos';
 let sortCol = null, sortDir = 1; // 1=asc, -1=desc
 let modalId = null;
 let currentPage = 'dashboard';
@@ -707,20 +733,79 @@ function renderCatGrid(){
   }).join('');
 }
 
+function renderSpaceGrid(){
+  const el=document.getElementById('space-grid');
+  if(!el) return;
+  const hasSpace = items.some(x=>x.space);
+  if(!hasSpace){
+    el.innerHTML=`<div style="color:var(--ink3);font-size:13px;padding:.5rem 0">Asigna departamentos a tus gastos para ver el resumen aquí.</div>`;
+    return;
+  }
+  el.innerHTML=SPACES.map(sp=>{
+    const its=items.filter(x=>x.space===sp.key);
+    if(!its.length) return '';
+    const tot=its.reduce((s,x)=>s+pTot(x),0);
+    const done=its.filter(x=>['Pagado','Instalado'].includes(x.status)).length;
+    const pct=Math.round(done/its.length*100);
+    return `<div class="phase-card" style="--ph-color:var(--teal);cursor:pointer" onclick="fSpace='${sp.key}';nav('gastos')">
+      <div class="ph-name"><i class="ti ${sp.icon}" style="margin-right:5px;color:var(--teal)"></i>${sp.key}</div>
+      <div class="ph-amt" style="font-size:16px">${fmt(tot)}</div>
+      <div class="ph-bar-track"><div class="ph-bar-fill" style="width:${pct}%;background:var(--teal)"></div></div>
+      <div class="ph-meta"><span>${its.length} gastos</span><span>${done} pagados · ${pct}%</span></div>
+    </div>`;
+  }).join('');
+}
+
+function renderStoreGrid(){
+  const el=document.getElementById('store-grid');
+  if(!el) return;
+  const stores=[...new Set(items.map(x=>x.store).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));
+  if(!stores.length){ el.innerHTML=''; return; }
+  el.innerHTML=stores.map(store=>{
+    const its=items.filter(x=>x.store===store);
+    const tot=its.reduce((s,x)=>s+pTot(x),0);
+    const done=its.filter(x=>['Pagado','Instalado'].includes(x.status)).length;
+    const pct=its.length?Math.round(done/its.length*100):0;
+    return `<div class="phase-card" style="--ph-color:var(--purple);cursor:pointer" onclick="fStore='${store}';nav('gastos')">
+      <div class="ph-name"><i class="ti ti-building-store" style="margin-right:5px;color:var(--purple)"></i>${store}</div>
+      <div class="ph-amt" style="font-size:16px">${fmt(tot)}</div>
+      <div class="ph-bar-track"><div class="ph-bar-fill" style="width:${pct}%;background:var(--purple)"></div></div>
+      <div class="ph-meta"><span>${its.length} gastos</span><span>${done} pagados · ${pct}%</span></div>
+    </div>`;
+  }).join('');
+}
+
 // ── RENDER FILTERS ──────────────────────────────────
 function renderFilters(){
   const bar1=document.getElementById('filter-phase');
   const bar2=document.getElementById('filter-cat');
   const bar3=document.getElementById('filter-type');
+  const bar4=document.getElementById('filter-space');
   if(bar1) bar1.innerHTML=['Todos',...PHASE_KEYS].map(k=>`<div class="chip ${k===fPhase?'active active-phase':''}" onclick="fPhase='${k}';render()">${k}</div>`).join('');
   if(bar2) bar2.innerHTML=['Todos',...CAT_KEYS].map(k=>`<div class="chip ${k===fCat?'active':''}" onclick="fCat='${k}';render()">${k}</div>`).join('');
   if(bar3) bar3.innerHTML=['Todos',...TYPES].map(k=>`<div class="chip ${k===fType?'active active-sub':''}" onclick="fType='${k}';render()">${k}</div>`).join('');
+  if(bar4) bar4.innerHTML=['Todos',...SPACE_KEYS].map(k=>{
+    const sp=SPACES.find(s=>s.key===k);
+    const icon=sp?`<i class="ti ${sp.icon}" style="font-size:11px"></i> `:'';
+    return `<div class="chip ${k===fSpace?'active active-space':''}" onclick="fSpace='${k}';render()">${icon}${k}</div>`;
+  }).join('');
+  const bar5=document.getElementById('filter-store');
+  if(bar5){
+    // Build unique sorted store list from current items
+    const stores=[...new Set(items.map(x=>x.store).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));
+    bar5.innerHTML=['Todos',...stores].map(k=>
+      `<div class="chip ${k===fStore?'active active-store':''}" onclick="fStore='${k}';render()">
+        <i class="ti ti-building-store" style="font-size:11px"></i> ${k}
+      </div>`
+    ).join('');
+  }
 }
 
 // ── RENDER TABLE ────────────────────────────────────
 // ── SORT HELPERS ────────────────────────────────────
 const SORT_COLS = [
   {key:'phase', label:'Fase',            val:x=>x.phase},
+  {key:'space', label:'Depto.',          val:x=>x.space||''},
   {key:'cat',   label:'Categoría',       val:x=>x.cat},
   {key:'art',   label:'Artículo',        val:x=>x.art},
   {key:'type',  label:'Tipo',            val:x=>x.type},
@@ -773,7 +858,9 @@ function renderTable(){
   if(fPhase!=='Todos') f=f.filter(x=>x.phase===fPhase);
   if(fCat!=='Todos')   f=f.filter(x=>x.cat===fCat);
   if(fType!=='Todos')  f=f.filter(x=>x.type===fType);
-  if(search) f=f.filter(x=>x.art.toLowerCase().includes(search)||x.store.toLowerCase().includes(search)||x.phase.toLowerCase().includes(search)||x.cat.toLowerCase().includes(search));
+  if(fSpace!=='Todos') f=f.filter(x=>(x.space||'')=== fSpace);
+  if(fStore!=='Todos') f=f.filter(x=>x.store===fStore);
+  if(search) f=f.filter(x=>x.art.toLowerCase().includes(search)||x.store.toLowerCase().includes(search)||x.phase.toLowerCase().includes(search)||x.cat.toLowerCase().includes(search)||(x.space||'').toLowerCase().includes(search));
   f=sortItems(f);
 
   // Totals bar
@@ -783,7 +870,7 @@ function renderTable(){
     const tPaid =f.filter(x=>['Pagado','Instalado'].includes(x.status)).reduce((s,x)=>s+pTot(x),0);
     const tPend =tTotal-tPaid;
     const nRec  =f.filter(x=>x.type!=='Único').length;
-    const lbl   =[fPhase!=='Todos'?fPhase:null,fCat!=='Todos'?fCat:null,fType!=='Todos'?fType:null].filter(Boolean).join(' · ')||'Todos';
+    const lbl   =[fPhase!=='Todos'?fPhase:null,fCat!=='Todos'?fCat:null,fType!=='Todos'?fType:null,fSpace!=='Todos'?fSpace:null,fStore!=='Todos'?fStore:null].filter(Boolean).join(' · ')||'Todos';
     const pill=(lbl,val,col)=>`<div class="tpill"><span>${lbl}</span><span style="color:${col}">${val}</span></div>`;
     bar.innerHTML=`<span class="tb-label">${lbl}</span><span class="tb-count">${f.length} items</span>`
       +pill('Total',fmt(tTotal),'#fff')
@@ -801,11 +888,13 @@ function renderTable(){
     const si=S_ICON[x.status]||'ti-clock';
     const phColor=phData(x.phase)?.color||'#888';
     const catIcon=CATS.find(c=>c.key===x.cat)?.icon||'ti-package';
+    const spaceIcon=SPACES.find(s=>s.key===x.space)?.icon||'';
     const linkCell=x.link
       ?`<td style="text-align:center"><a href="${x.link}" target="_blank" rel="noopener" style="color:var(--blue);font-size:17px" onclick="event.stopPropagation()"><i class="ti ti-external-link"></i></a></td>`
       :`<td style="text-align:center;color:var(--ink4)"><i class="ti ti-link-off" style="font-size:15px"></i></td>`;
     return `<tr style="cursor:pointer" onclick="openModal(${x.id})">
       <td><span class="tag" style="background:${phColor}22;color:${phColor};font-size:10px">${x.phase}</span></td>
+      <td>${x.space?`<span class="tag" style="background:var(--teal-bg);color:var(--teal);font-size:10px"><i class="ti ${spaceIcon}" style="font-size:10px;margin-right:2px"></i>${x.space}</span>`:'<span style="color:var(--ink4);font-size:11px">—</span>'}</td>
       <td><span class="tag" style="background:var(--paper2);color:var(--ink2)"><i class="ti ${catIcon}" style="font-size:10px;margin-right:2px"></i>${x.cat}</span></td>
       <td style="font-weight:600;max-width:200px">${x.art}${x.notes?`<div style="font-size:11px;color:var(--ink3);margin-top:1px">${x.notes}</div>`:''}</td>
       <td style="font-size:11px;color:var(--ink2)">${x.type}</td>
@@ -833,6 +922,7 @@ function openModal(id){
   document.getElementById('m-phase-dot').style.background=phColor;
   document.getElementById('m-title').textContent=x.art;
   document.getElementById('m-phase').textContent=x.phase;
+  document.getElementById('m-space').textContent=x.space||'Sin asignar';
   document.getElementById('m-cat').textContent=x.cat;
   document.getElementById('m-type').textContent=x.type;
   document.getElementById('m-store').textContent=x.store||'—';
@@ -852,6 +942,9 @@ function openModal(id){
   document.getElementById('m-price-edit').value=x.price;
   document.getElementById('m-notes-edit').value=x.notes||'';
   document.getElementById('m-link-edit').value=x.link||'';
+  // Space select
+  const spSel=document.getElementById('m-space-sel');
+  spSel.innerHTML='<option value="">Sin asignar</option>'+SPACE_KEYS.map(s=>`<option value="${s}" ${s===(x.space||'')?'selected':''}>${s}</option>`).join('');
   // Status select
   const sel=document.getElementById('m-status-sel');
   sel.innerHTML=STATUSES.map(s=>`<option value="${s}" ${s===x.status?'selected':''}>${s}</option>`).join('');
@@ -982,9 +1075,11 @@ function populateSelects(){
   const p=document.getElementById('f-phase');
   const c=document.getElementById('f-cat');
   const t=document.getElementById('f-type');
-  if(p) p.innerHTML=PHASE_KEYS.map(k=>`<option value="${k}">${k}</option>`).join('');
-  if(c) c.innerHTML=CAT_KEYS.map(k=>`<option value="${k}">${k}</option>`).join('');
-  if(t) t.innerHTML=TYPES.map(k=>`<option value="${k}">${k}</option>`).join('');
+  const sp=document.getElementById('f-space');
+  if(p)  p.innerHTML=PHASE_KEYS.map(k=>`<option value="${k}">${k}</option>`).join('');
+  if(c)  c.innerHTML=CAT_KEYS.map(k=>`<option value="${k}">${k}</option>`).join('');
+  if(t)  t.innerHTML=TYPES.map(k=>`<option value="${k}">${k}</option>`).join('');
+  if(sp) sp.innerHTML='<option value="">Sin asignar</option>'+SPACE_KEYS.map(k=>`<option value="${k}">${k}</option>`).join('');
 }
 
 function renderCfgInputs(){
@@ -1020,6 +1115,7 @@ function addItem(){
     id:nextId++,
     phase: document.getElementById('f-phase').value,
     cat:   document.getElementById('f-cat').value,
+    space: document.getElementById('f-space').value,
     type:  document.getElementById('f-type').value,
     art, store: document.getElementById('f-store').value.trim(),
     qty:   parseInt(document.getElementById('f-qty').value)||1,
@@ -1203,6 +1299,8 @@ function render(){
   renderKPIs();
   renderPhaseGrid();
   renderCatGrid();
+  renderSpaceGrid();
+  renderStoreGrid();
   renderFilters();
   renderTable();
   renderChecklist();
@@ -1232,6 +1330,7 @@ initSync();
     <div class="modal-body">
       <div class="detail-grid">
         <div class="detail-field"><div class="df-label">Fase</div><div class="df-val" id="m-phase">—</div></div>
+        <div class="detail-field"><div class="df-label">Departamento</div><div class="df-val" id="m-space">—</div></div>
         <div class="detail-field"><div class="df-label">Categoría</div><div class="df-val" id="m-cat">—</div></div>
         <div class="detail-field"><div class="df-label">Tipo</div><div class="df-val" id="m-type">—</div></div>
         <div class="detail-field"><div class="df-label">Proveedor / Tienda</div><div class="df-val" id="m-store">—</div></div>
@@ -1243,6 +1342,14 @@ initSync();
         <div class="detail-field full" id="m-link-row">
           <div class="df-label">Link del producto</div>
           <div class="df-val"><a id="m-link" href="#" target="_blank" rel="noopener" style="color:var(--blue);display:inline-flex;align-items:center;gap:5px;font-size:13px;word-break:break-all">—</a></div>
+        </div>
+        <div class="detail-field full">
+          <div class="df-label">Departamento (editar)</div>
+          <div class="edit-row">
+            <select id="m-space-sel" onchange="updateFromModal('space',this.value)">
+              <option value="">Sin asignar</option>
+            </select>
+          </div>
         </div>
         <div class="detail-field full">
           <div class="df-label">Estatus</div>
