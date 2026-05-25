@@ -484,6 +484,7 @@ thead th.sortable.desc .sort-icon{opacity:1;color:var(--accent2)}
         <div class="card">
           <div class="cfg-list">
             <div style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.75rem">Costos fijos mensuales</div>
+            <div class="cfg-row"><div><div class="cfg-lbl">Mantenimiento Renzo Towers</div></div><input id="roi-admin" type="number" value="5800" oninput="calcROI()"></div>
             <div class="cfg-row"><div><div class="cfg-lbl">Internet</div></div><input id="roi-internet" type="number" value="600" oninput="calcROI()"></div>
             <div class="cfg-row"><div><div class="cfg-lbl">Gas</div></div><input id="roi-gas" type="number" value="400" oninput="calcROI()"></div>
             <div class="cfg-row"><div><div class="cfg-lbl">Limpieza / servicio</div></div><input id="roi-limpieza" type="number" value="800" oninput="calcROI()"></div>
@@ -1073,6 +1074,7 @@ function calcROI(){
   const ocup   =+document.getElementById('roi-ocup')?.value||65;
   const dias   =+document.getElementById('roi-dias')?.value||30;
   const fee    =+document.getElementById('roi-fee')?.value||3;
+  const admin =+document.getElementById('roi-admin')?.value||5800;
   const internet=+document.getElementById('roi-internet')?.value||600;
   const gas    =+document.getElementById('roi-gas')?.value||400;
   const limpStr=+document.getElementById('roi-limpieza')?.value||800;
@@ -1082,7 +1084,7 @@ function calcROI(){
   const ingresoB   = diasOcup*noche;
   const feeAmt     = ingresoB*(fee/100);
   const ingresoN   = ingresoB-feeAmt;
-  const costoFijos = internet+gas+limpStr+otros;
+  const costoFijos = admin+internet+gas+limpStr+otros;
   const recItems   = items.filter(x=>x.type==='Recurrente mensual').reduce((s,x)=>s+pTot(x),0);
   const totalFijos = costoFijos+recItems;
   const utilidad   = ingresoN-totalFijos;
